@@ -1,12 +1,13 @@
 import os
 import logging
+import asyncio
 from flask import Flask
 from threading import Thread
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
-from g4f.client import Client
+import g4f
 
-# 1. إعداد Flask ليعمل في الخلفية (عشان Render يظل Live)
+# 1. خادم ويب بسيط لإبقاء الخدمة تعمل على Render
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,36 +18,44 @@ def run_flask():
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
-# 2. منطق البوت والرد على الرسائل
+# 2. منطق الرد على الرسائل باستخدام الذكاء الاصطناعي
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
     user_text = update.message.text
     try:
-        # إرسال إشارة "جارٍ الكتابة"
+        # إظهار حالة "جارٍ الكتابة" في تليجرام
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         
-        client = Client()
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_text}]
+        # محاولة جلب رد من الذكاء الاصطناعي
+        response = await g4f.ChatCompletion.create_async(
+            model=g4f.models.gpt_35_turbo,
+            messages=[{"role": "user", "content": user_text}],
         )
-        answer = response.choices[0].message.content
-        await update.message.reply_text(answer)
+        
+        if response:
+            await update.message.reply_text(response)
+        else:
+            await update.message.reply_text("المعذرة، المحرك لا يستجيب حالياً، جرب إرسال الرسالة مرة أخرى.")
+
     except Exception as e:
-        print(f"Error in G4F: {e}")
-        await update.message.reply_text("عذراً، واجهت مشكلة في معالجة طلبك.")
+        print(f"Error details: {e}")
+        await update.message.reply_text("عذراً، واجهت مشكلة في معالجة طلبك، سأحاول تحسين الاتصال.")
 
-# 3. تشغيل كل شيء
+# 3. تشغيل البوت والخادم معاً
 if __name__ == '__main__':
-    # تشغيل Flask في Thread منفصل
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
+    # تشغيل Flask في خيط منفصل
+    Thread(target=run_flask).start()
 
-    # وضع التوكن الخاص بك
+    # --- ضع التوكن الخاص بك هنا بدقة ---
     TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY" 
 
-    # بناء وتشغيل البوت
+    # بناء تطبيق تليجرام
     application = ApplicationBuilder().token(TOKEN).build()
+    
+    # إضافة معالج الرسائل النصية
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     
-    print("Telegram Bot is starting...")
+    print("Starting Telegram Bot...")
     application.run_polling()
