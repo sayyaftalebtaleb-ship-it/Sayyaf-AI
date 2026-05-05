@@ -30,7 +30,7 @@ if __name__ == '__main__':
     Thread(target=run).start()
     
     # ضع التوكن الخاص بك هنا بدقة
-    TOKEN = 'YOUR_BOT_TOKEN_HERE'
+    TOKEN = '7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY'
     
     # بناء التطبيق مع ضبط إعدادات الشبكة لتجنب خطأ HTTP
     application = ApplicationBuilder().token(TOKEN).build()
