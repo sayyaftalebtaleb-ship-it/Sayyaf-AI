@@ -1,4 +1,4 @@
-python-telegram-bot
+python-telegram-bot==20.8
 g4f
-nest_asyncio
 flask
+httpx[http2]
