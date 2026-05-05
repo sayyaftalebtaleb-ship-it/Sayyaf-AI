@@ -1,5 +1,5 @@
-python-telegram-bot==20.8
-g4f==0.3.2.8
-flask==3.0.2
-httpx[http2]==0.27.0
-nest_asyncio==1.6.0
+python-telegram-bot
+g4f
+flask
+httpx[http2]
+nest_asyncio
