@@ -50,7 +50,7 @@ if __name__ == '__main__':
     Thread(target=run_flask).start()
     
     # ضع التوكن الخاص بك هنا
-    TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY"
+    TOKEN = "8665085128:AAF_lrCk-Kvn3fhf9N17pP6zwq0T_CNFL_8"
     
     application = ApplicationBuilder().token(TOKEN).build()
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
