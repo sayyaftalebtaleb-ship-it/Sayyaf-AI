@@ -1,49 +1,40 @@
-import logging
 import os
+import logging
 from flask import Flask
 from threading import Thread
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from g4f.client import Client
-import nest_asyncio
 
-# إعداد خادم وهمي لإبقاء Render سعيداً
+# إعداد خادم ويب بسيط
 app = Flask('')
 @app.route('/')
-def home():
-    return "I am alive"
+def home(): return "OK"
 
 def run():
-    app.run(host='0.0.0.0', port=10000)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# كود البوت الأساسي
-nest_asyncio.apply()
-logging.basicConfig(level=logging.INFO)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.text: return
-    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     try:
         client = Client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": update.message.text}],
+            messages=[{"role": "user", "content": update.message.text}]
         )
         await update.message.reply_text(response.choices[0].message.content)
     except Exception as e:
-        await update.message.reply_text("النظام مشغول، جرب مرة أخرى.")
+        print(f"Error: {e}")
 
 if __name__ == '__main__':
-    # --- ضع التوكن الخاص بك هنا ---
-    TOKEN = '7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY'
+    Thread(target=run).start()
     
-    # تشغيل المنبه قبل البوت
-    keep_alive()
+    # ضع التوكن الخاص بك هنا بدقة
+    TOKEN = 'YOUR_BOT_TOKEN_HERE'
     
+    # بناء التطبيق مع ضبط إعدادات الشبكة لتجنب خطأ HTTP
     application = ApplicationBuilder().token(TOKEN).build()
+    
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+    
     application.run_polling()
