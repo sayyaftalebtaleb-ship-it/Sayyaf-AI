@@ -42,7 +42,7 @@ if __name__ == '__main__':
     flask_thread.start()
 
     # وضع التوكن الخاص بك
-    TOKEN = "ضع_التوكن_هنا" 
+    TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY" 
 
     # بناء وتشغيل البوت
     application = ApplicationBuilder().token(TOKEN).build()
