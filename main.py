@@ -45,7 +45,7 @@ if __name__ == '__main__':
     Thread(target=run_flask).start()
     
     # ضع التوكن الخاص بك هنا
-    TOKEN = "8665085128:AAF_lrCk-Kvn3fhf9N17pP6zwq0T_CNFL_8"
+    TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY"
     
     # أهم سطر: drop_pending_updates=True ينهي أي تصادم فوراً
     application = ApplicationBuilder().token(TOKEN).build()
