@@ -8,10 +8,6 @@ app = Flask(__name__)
 @app.route('/')
 def home(): return "Sayyaf AI is Online", 200
 
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
-
 user_memory = {}
 
 def fetch_ai_reply(user_id, user_text, user_lang):
@@ -20,26 +16,28 @@ def fetch_ai_reply(user_id, user_text, user_lang):
     
     dev_name = "سياف طالب" if user_lang != 'en' else "Sayyaf Taleb"
     
+    # التعليمات
     system_prompt = (
-        f"أنت مساعد ذكي محترف اسمك Sayyaf AI ومطورك هو {dev_name}. "
-        "لا تذكر اسمك إلا إذا سُئلت. "
-        "ضع الجداول داخل كود بلوك (```) لضمان التنسيق."
+        f"أنت مساعد ذكي اسمك Sayyaf AI ومطورك هو {dev_name}. "
+        "لا تذكر اسمك إلا إذا سُئلت. نظم النصوص بجداول داخل (```)."
     )
 
-    messages = [{"role": "system", "content": system_prompt}]
-    # قللنا الذاكرة لآخر 4 رسائل فقط لتخفيف الضغط على المحرك وتجنب الرفض
-    messages.extend(user_memory[user_id][-4:]) 
-    messages.append({"role": "user", "content": user_text})
-
-    # الرابط الأساسي المباشر الذي يعطي النص مباشرة
+    # الرابط الصافي بدون أي إضافات أو أقواس
     url = "[https://text.pollinations.ai/](https://text.pollinations.ai/)"
     
     try:
-        # إضافة User-Agent لكي لا يظن المحرك أن الطلب قادم من "روبوت اختراق" ويرفضه
-        headers = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
-        payload = {"messages": messages, "model": "openai", "private": True}
+        # تجهيز الطلب
+        payload = {
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                *user_memory[user_id][-4:], # آخر 4 رسائل
+                {"role": "user", "content": user_text}
+            ],
+            "model": "openai",
+            "private": True
+        }
         
-        response = requests.post(url, json=payload, headers=headers, timeout=60)
+        response = requests.post(url, json=payload, timeout=60)
         
         if response.status_code == 200:
             ai_reply = response.text
@@ -47,12 +45,10 @@ def fetch_ai_reply(user_id, user_text, user_lang):
             user_memory[user_id].append({"role": "assistant", "content": ai_reply})
             return ai_reply
         else:
-            # هنا التعديل الذهبي: البوت سيرسل لك سبب رفض السيرفر!
-            return f"⚠️ **خطأ من السيرفر:**\nرمز الخطأ: `{response.status_code}`\nتفاصيل: {response.text}"
+            return f"⚠️ خطأ من السيرفر: {response.status_code}"
             
     except Exception as e:
-        # وإذا كان الخطأ من الاتصال، سيرسل لك نوع الخطأ!
-        return f"⚠️ **خطأ في الاتصال بالمحرك:**\n`{str(e)}`"
+        return f"⚠️ خطأ تقني: {str(e)}"
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text: return
@@ -62,6 +58,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     user_lang = update.effective_user.language_code
 
+    # وشم الكتابة
     stop_typing = asyncio.Event()
     async def keep_typing():
         while not stop_typing.is_set():
@@ -84,16 +81,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text(answer, parse_mode='Markdown')
             except:
                 await update.message.reply_text(answer)
-        else:
-            await update.message.reply_text("عذراً، لم أتمكن من الحصول على الرد.")
-    except Exception as e:
+    except:
         stop_typing.set()
-        await update.message.reply_text(f"⚠️ خطأ داخلي في البوت:\n`{str(e)}`")
 
 if __name__ == '__main__':
-    Thread(target=run_flask).start()
+    Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))).start()
     
-    # ⚠️ لا تنسَ وضع التوكن الخاص بك
+    # ضع التوكن هنا
     TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY"
     
     application = ApplicationBuilder().token(TOKEN).build()
