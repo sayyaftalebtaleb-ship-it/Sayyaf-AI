@@ -16,26 +16,24 @@ def get_ai_response(user_id, user_text, user_lang):
     
     memory = user_memory[user_id]
     
-    # تحديد الاسم بناءً على لغة المستخدم فقط
+    # اسم المطور حسب اللغة
     creator_name = "Sayyaf Taleb" if user_lang == 'en' else "سياف طالب"
     bot_name = "Sayyaf AI"
     
-    # التعليمات المعدلة لعدم الثرثرة والتنظيم
     system_prompt = (
         f"أنت مساعد ذكي محترف. لا تذكر اسمك ({bot_name}) أو مطورك ({creator_name}) "
         "إلا إذا سألك المستخدم صراحة عن ذلك. "
-        "إذا سُئلت عن هويتك، أجب باختصار: (أنا {bot_name}، مساعد ذكي طوره المبرمج {creator_name}). "
-        "لا تصف قدراتك أو أسلوب عملك للمستخدم، فقط نفذ الأوامر بصمت. "
-        "نظم النصوص والجداول بشكل احترافي جداً باستخدام Markdown، "
-        "واجعل الجداول داخل بلوك كود (```) لتظهر مرتبة."
+        "مهمتك الأساسية هي تنظيم النصوص بشكل احترافي جداً. "
+        "استخدم الجداول بنظام Markdown الواضح، والقوائم المنقطة، والعناوين العريضة. "
+        "اجعل الردود سهلة القراءة ومرتبة كأنها وثيقة رسمية."
     )
 
     messages = [{"role": "system", "content": system_prompt}]
-    messages.extend(memory[-10:])
+    messages.extend(memory[-10:]) # الاحتفاظ بآخر 10 رسائل للذاكرة
     messages.append({"role": "user", "content": user_text})
 
     try:
-        url = "[https://text.pollinations.ai/](https://text.pollinations.ai/)"
+        url = "https://text.pollinations.ai/"
         response = requests.post(url, json={"messages": messages, "model": "openai", "private": True}, timeout=60)
         if response.status_code == 200:
             ai_reply = response.text
@@ -48,10 +46,8 @@ def get_ai_response(user_id, user_text, user_lang):
 async def keep_typing(context, chat_id, stop_event):
     """وظيفة لضمان استمرار وشم الكتابة حتى ظهور الرد"""
     while not stop_event.is_set():
-        try:
-            await context.bot.send_chat_action(chat_id=chat_id, action="typing")
-            await asyncio.sleep(4)
-        except: break
+        await context.bot.send_chat_action(chat_id=chat_id, action="typing")
+        await asyncio.sleep(4)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text: return
@@ -59,9 +55,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
     user_text = update.message.text
+    # تحديد لغة المستخدم
     user_lang = update.effective_user.language_code if update.effective_user.language_code else 'ar'
 
-    # بدء وشم الكتابة
+    # بدء وشم الكتابة في الخلفية
     stop_typing = asyncio.Event()
     typing_task = asyncio.create_task(keep_typing(context, chat_id, stop_typing))
     
@@ -69,16 +66,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         loop = asyncio.get_event_loop()
         answer = await loop.run_in_executor(None, get_ai_response, user_id, user_text, user_lang)
         
-        # التوقف يحدث هنا فوراً قبل إرسال الرد
-        stop_typing.set() 
+        stop_typing.set() # إيقاف وشم الكتابة فوراً
         await typing_task
         
         if answer:
-            # محاولة الإرسال بتنسيق Markdown لجعل الجداول احترافية
-            try:
-                await update.message.reply_text(answer, parse_mode='Markdown')
-            except:
-                await update.message.reply_text(answer)
+            await update.message.reply_text(answer, parse_mode='Markdown')
         else:
             await update.message.reply_text("عذراً، حدث خطأ في المعالجة.")
     except Exception as e:
