@@ -16,36 +16,35 @@ def fetch_ai_reply(user_id, user_text, user_lang):
     
     dev_name = "سياف طالب" if user_lang != 'en' else "Sayyaf Taleb"
     
-    # التعليمات
+    # التعليمات الأساسية
     system_prompt = (
-        f"أنت مساعد ذكي اسمك Sayyaf AI ومطورك هو {dev_name}. "
-        "لا تذكر اسمك إلا إذا سُئلت. نظم النصوص بجداول داخل (```)."
+        f"أنت Sayyaf AI ومطورك {dev_name}. "
+        "لا تذكر اسمك إلا عند السؤال. نظم النصوص بجداول داخل (```)."
     )
 
-    # الرابط الصافي بدون أي إضافات أو أقواس
-    url = "[https://text.pollinations.ai/](https://text.pollinations.ai/)"
+    # الرابط "نظيف" تماماً بدون أي مسافات
+    api_url = "[https://text.pollinations.ai/](https://text.pollinations.ai/)"
     
     try:
-        # تجهيز الطلب
         payload = {
             "messages": [
                 {"role": "system", "content": system_prompt},
-                *user_memory[user_id][-4:], # آخر 4 رسائل
+                *user_memory[user_id][-4:],
                 {"role": "user", "content": user_text}
             ],
             "model": "openai",
             "private": True
         }
         
-        response = requests.post(url, json=payload, timeout=60)
+        # إرسال الطلب
+        response = requests.post(api_url, json=payload, timeout=60)
         
         if response.status_code == 200:
             ai_reply = response.text
             user_memory[user_id].append({"role": "user", "content": user_text})
             user_memory[user_id].append({"role": "assistant", "content": ai_reply})
             return ai_reply
-        else:
-            return f"⚠️ خطأ من السيرفر: {response.status_code}"
+        return f"⚠️ خطأ سيرفر: {response.status_code}"
             
     except Exception as e:
         return f"⚠️ خطأ تقني: {str(e)}"
@@ -87,7 +86,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))).start()
     
-    # ضع التوكن هنا
+    # استبدل TOKEN_HERE بتوكن بوتك
     TOKEN = "7965345356:AAEiY2Q3UQ6WZvpFQAAmap0eebvLRvWXVuY"
     
     application = ApplicationBuilder().token(TOKEN).build()
